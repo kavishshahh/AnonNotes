@@ -54,7 +54,7 @@ export default function LoginScreen() {
           <View style={styles.loginContainer}>
             <Ionicons name="lock-closed-outline" size={80} color={darkTheme.primary} />
             <View style={styles.titleContainer}>
-              <ThemedText style={styles.title}>Secure Notes</ThemedText>
+              <ThemedText style={styles.title}>Anon Notes</ThemedText>
               <ThemedText style={styles.subtitle}>
                 Enter password to access your notes
               </ThemedText>

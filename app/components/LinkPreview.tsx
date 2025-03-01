@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Image, Linking, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { getLinkPreview } from 'react-native-link-preview';
 
 import { darkTheme } from '../_layout';
 import { ThemedText } from './ThemedText';
@@ -12,7 +11,7 @@ interface LinkPreviewProps {
 interface PreviewData {
   title?: string;
   description?: string;
-  images?: string[];
+  image?: string;
 }
 
 export function LinkPreview({ url }: LinkPreviewProps) {
@@ -21,17 +20,33 @@ export function LinkPreview({ url }: LinkPreviewProps) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetchLinkPreview();
+    fetchPreview();
   }, [url]);
 
-  const fetchLinkPreview = async () => {
+  const fetchPreview = async () => {
     try {
       setLoading(true);
       setError(false);
-      const data = await getLinkPreview(url);
-      setPreview(data);
+      
+      // Use a proxy service to avoid CORS issues
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+      const response = await fetch(proxyUrl);
+      const html = await response.text();
+      
+      const titleMatch = html.match(/<meta property="og:title" content="([^"]+)"/i);
+      const descriptionMatch = html.match(/<meta property="og:description" content="([^"]+)"/i);
+      const imageMatch = html.match(/<meta property="og:image" content="([^"]+)"/i);
+
+      // Fallback to regular title tag if no OG title is found
+      const fallbackTitleMatch = titleMatch ? null : html.match(/<title>([^<]+)<\/title>/i);
+
+      setPreview({
+        title: titleMatch?.[1] || fallbackTitleMatch?.[1] || '',
+        description: descriptionMatch?.[1],
+        image: imageMatch?.[1],
+      });
     } catch (err) {
-      console.error('Error fetching link preview:', err);
+      console.error('Error fetching preview:', err);
       setError(true);
     } finally {
       setLoading(false);
@@ -60,9 +75,9 @@ export function LinkPreview({ url }: LinkPreviewProps) {
 
   return (
     <TouchableOpacity style={styles.container} onPress={handlePress}>
-      {preview.images?.[0] && (
+      {preview.image && (
         <Image
-          source={{ uri: preview.images[0] }}
+          source={{ uri: preview.image }}
           style={styles.image}
           resizeMode="cover"
         />
